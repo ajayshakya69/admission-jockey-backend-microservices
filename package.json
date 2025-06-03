@@ -1,0 +1,37 @@
+{
+  "name": "admission-jockey-backend",
+  "version": "1.0.0",
+  "description": "Microservices backend for Admission Jockey platform",
+  "main": "index.js",
+  "scripts": {
+    "dev": "docker-compose up --build",
+    "prod": "docker-compose -f docker-compose.yml up --build",
+    "build": "./scripts/build-all.sh",
+    "test": "./scripts/test-all.sh",
+    "lint": "eslint . --ext .ts,.js",
+    "lint:fix": "eslint . --ext .ts,.js --fix",
+    "clean": "docker-compose down -v && docker system prune -f",
+    "logs": "docker-compose logs -f",
+    "health": "curl -f http://localhost:3000/health || exit 1"
+  },
+  "keywords": ["microservices", "nodejs", "typescript", "docker", "mongodb", "redis", "rabbitmq", "consul"],
+  "author": "Admission Jockey Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "dependencies": {
+    "@types/express": "^5.0.2"
+  }
+}

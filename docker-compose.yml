@@ -1,0 +1,393 @@
+version: '3.8'
+
+services:
+  # API Gateway
+  api-gateway:
+    build: 
+      context: ./api-gateway
+      target: production
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - CONSUL_URL=http://service-discovery:8500/v1/catalog/service
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
+      - LOG_LEVEL=info
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+    depends_on:
+      - service-discovery
+      - rabbitmq
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Service Discovery
+  service-discovery:
+    image: consul:1.15.0
+    ports:
+      - "8500:8500"
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+    volumes:
+      - consul-data:/consul/data
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Auth Service
+  auth-service:
+    build: 
+      context: ./auth-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - MONGO_URI=mongodb://mongo-auth:27017/auth-db
+      - JWT_SECRET=${JWT_SECRET:-your_jwt_secret_here}
+      - JWT_EXPIRES_IN=1h
+      - REFRESH_TOKEN_EXPIRES_IN=7d
+      - SMTP_HOST=${SMTP_HOST:-mailhog}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM:-no-reply@admissionjockey.com}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:3000}
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-auth
+      - service-discovery
+      - mailhog
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # User Profile Service
+  user-service:
+    build: 
+      context: ./user-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - MONGO_URI=mongodb://mongo-user:27017/user-db
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-user
+      - service-discovery
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # College Service
+  college-service:
+    build: 
+      context: ./college-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3003
+      - MONGO_URI=mongodb://mongo-college:27017/college-db
+      - REDIS_URI=redis://redis:6379
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-college
+      - redis
+      - service-discovery
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Application Builder Service
+  application-service:
+    build: 
+      context: ./application-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3005
+      - MONGO_URI=mongodb://mongo-app:27017/app-db
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-app
+      - service-discovery
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Alumni Service
+  alumni-service:
+    build: 
+      context: ./alumni-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3006
+      - MONGO_URI=mongodb://mongo-alumni:27017/alumni-db
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-alumni
+      - service-discovery
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Calendar Service
+  calendar-service:
+    build: 
+      context: ./calendar-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3007
+      - MONGO_URI=mongodb://mongo-calendar:27017/calendar-db
+      - REDIS_URI=redis://redis:6379
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-calendar
+      - redis
+      - service-discovery
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Payment Service
+  payment-service:
+    build: 
+      context: ./payment-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3008
+      - MONGO_URI=mongodb://mongo-payment:27017/payment-db
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-payment
+      - service-discovery
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Notification Service
+  notification-service:
+    build: 
+      context: ./notification-service
+      target: production
+    environment:
+      - NODE_ENV=production
+      - PORT=3009
+      - MONGO_URI=mongodb://mongo-notification:27017/notification-db
+      - REDIS_URI=redis://redis:6379
+      - SMTP_HOST=${SMTP_HOST:-mailhog}
+      - SMTP_PORT=${SMTP_PORT:-1025}
+      - LOG_LEVEL=info
+    depends_on:
+      - mongo-notification
+      - redis
+      - mailhog
+      - service-discovery
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Message Queue
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:-password}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Redis for caching and queues
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-password}
+    volumes:
+      - redis-data:/data
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # MongoDB instances for each service
+  mongo-auth:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=auth-db
+    volumes:
+      - mongo-auth-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  mongo-user:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=user-db
+    volumes:
+      - mongo-user-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  mongo-college:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=college-db
+    volumes:
+      - mongo-college-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  mongo-app:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=app-db
+    volumes:
+      - mongo-app-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  mongo-alumni:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=alumni-db
+    volumes:
+      - mongo-alumni-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  mongo-calendar:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=calendar-db
+    volumes:
+      - mongo-calendar-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  mongo-payment:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=payment-db
+    volumes:
+      - mongo-payment-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  mongo-notification:
+    image: mongo:7
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASS:-password}
+      - MONGO_INITDB_DATABASE=notification-db
+    volumes:
+      - mongo-notification-data:/data/db
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Monitoring tools
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring-service/config/prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3100:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring-service/config/grafana:/etc/grafana/provisioning
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+  # Mail server for development
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    networks:
+      - admission-jockey-network
+    restart: unless-stopped
+
+networks:
+  admission-jockey-network:
+    driver: bridge
+
+volumes:
+  mongo-auth-data:
+  mongo-user-data:
+  mongo-college-data:
+  mongo-app-data:
+  mongo-alumni-data:
+  mongo-calendar-data:
+  mongo-payment-data:
+  mongo-notification-data:
+  rabbitmq-data:
+  redis-data:
+  consul-data:
+  prometheus-data:
+  grafana-data:
