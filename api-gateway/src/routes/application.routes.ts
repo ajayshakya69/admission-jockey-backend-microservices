@@ -1,60 +1,61 @@
-const express = require('express');
+import express from "express";
+import axios from "axios";
+
 const router = express.Router();
-const axios = require('axios');
 
-const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4000';
+const APPLICATION_SERVICE_URL = process.env.APPLICATION_SERVICE_URL || 'http://localhost:4004';
 
-// Forward all auth requests to auth-service
-router.post('/register', async (req, res) => {
+// Forward application builder related requests to application-service
+router.get('/applications', async (req, res) => {
   try {
-    const response = await axios.post(AUTH_SERVICE_URL + '/auth/register', req.body);
+    const response = await axios.get(APPLICATION_SERVICE_URL + '/applications', { params: req.query });
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/applications', async (req, res) => {
   try {
-    const response = await axios.post(AUTH_SERVICE_URL + '/auth/login', req.body);
+    const response = await axios.post(APPLICATION_SERVICE_URL + '/applications', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/refresh-token', async (req, res) => {
+router.put('/applications/:id', async (req, res) => {
   try {
-    const response = await axios.post(AUTH_SERVICE_URL + '/auth/refresh-token', req.body);
+    const response = await axios.put(APPLICATION_SERVICE_URL + '/applications/' + req.params.id, req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/forgot-password', async (req, res) => {
+router.get('/applications/:id/status', async (req, res) => {
   try {
-    const response = await axios.post(AUTH_SERVICE_URL + '/auth/forgot-password', req.body);
+    const response = await axios.get(APPLICATION_SERVICE_URL + '/applications/' + req.params.id + '/status');
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/reset-password', async (req, res) => {
+router.post('/applications/:id/documents', async (req, res) => {
   try {
-    const response = await axios.post(AUTH_SERVICE_URL + '/auth/reset-password', req.body);
+    const response = await axios.post(APPLICATION_SERVICE_URL + '/applications/' + req.params.id + '/documents', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.get('/verify-email/:token', async (req, res) => {
+router.get('/forms/:collegeId', async (req, res) => {
   try {
-    const response = await axios.get(AUTH_SERVICE_URL + '/auth/verify-email/' + req.params.token);
+    const response = await axios.get(APPLICATION_SERVICE_URL + '/forms/' + req.params.collegeId);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });

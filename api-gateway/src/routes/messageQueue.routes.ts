@@ -1,14 +1,15 @@
 import { Router, type Request, type Response } from "express"
-import { messageQueueService } from "../services/messageQueue.service"
-import { validateBody } from "../middlewares/validation.middleware"
-import { MessageQueueEventSchema } from "../schemas/common.schemas"
+
+import { validateBody } from "../../../api-gateway/src/middlewares/validation.middleware"
+import { MessageQueueEventSchema } from "../../../api-gateway/src/schemas/common.schemas"
+import { kafkaService } from "@/services/kafka.service"
 
 const router = Router()
 
 router.post("/publish", validateBody(MessageQueueEventSchema), async (req: Request, res: Response): Promise<void> => {
   try {
     const { queue, message } = req.body
-    await messageQueueService.publishEvent(queue, message)
+    await kafkaService.publishEvent(queue, message)
 
     res.status(200).json({
       message: "Event published successfully",

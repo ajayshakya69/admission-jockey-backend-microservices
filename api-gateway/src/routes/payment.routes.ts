@@ -1,51 +1,52 @@
-const express = require('express');
+import express from "express";
+import axios from "axios";
+
 const router = express.Router();
-const axios = require('axios');
 
-const USER_SERVICE_URL = process.env.USER_SERVICE_URL || 'http://localhost:4001';
+const PAYMENT_SERVICE_URL = process.env.PAYMENT_SERVICE_URL || 'http://localhost:4007';
 
-// Forward user profile requests to user-service
-router.get('/:userId', async (req, res) => {
+// Forward payment-related requests to payment-service
+router.post('/payments', async (req, res) => {
   try {
-    const response = await axios.get(USER_SERVICE_URL + '/users/' + req.params.userId);
+    const response = await axios.post(PAYMENT_SERVICE_URL + '/payments', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any) {
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.put('/:userId', async (req, res) => {
+router.get('/payments/:id', async (req, res) => {
   try {
-    const response = await axios.put(USER_SERVICE_URL + '/users/' + req.params.userId, req.body);
+    const response = await axios.get(PAYMENT_SERVICE_URL + '/payments/' + req.params.id);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any) {
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/:userId/education', async (req, res) => {
+router.get('/payments', async (req, res) => {
   try {
-    const response = await axios.post(USER_SERVICE_URL + '/users/' + req.params.userId + '/education', req.body);
+    const response = await axios.get(PAYMENT_SERVICE_URL + '/payments', { params: req.query });
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any) {
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.put('/:userId/preferences', async (req, res) => {
+router.post('/webhooks/razorpay', async (req, res) => {
   try {
-    const response = await axios.put(USER_SERVICE_URL + '/users/' + req.params.userId + '/preferences', req.body);
+    const response = await axios.post(PAYMENT_SERVICE_URL + '/webhooks/razorpay', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any) {
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/:userId/avatar', async (req, res) => {
+router.post('/webhooks/stripe', async (req, res) => {
   try {
-    const response = await axios.post(USER_SERVICE_URL + '/users/' + req.params.userId + '/avatar', req.body);
+    const response = await axios.post(PAYMENT_SERVICE_URL + '/webhooks/stripe', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any) {
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });

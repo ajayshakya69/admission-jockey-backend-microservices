@@ -1,60 +1,60 @@
-const express = require('express');
+import express from "express";
+import axios from "axios";
+
 const router = express.Router();
-const axios = require('axios');
+const AUTH_SERVICE_URL = process.env.AUTH_SERVICE_URL || 'http://localhost:4000';
 
-const ALUMNI_SERVICE_URL = process.env.ALUMNI_SERVICE_URL || 'http://localhost:4005';
-
-// Forward alumni-related requests to alumni-service
-router.get('/', async (req, res) => {
+// Forward all auth requests to auth-service
+router.post('/register', async (req, res) => {
   try {
-    const response = await axios.get(ALUMNI_SERVICE_URL + '/alumni', { params: req.query });
+    const response = await axios.post(AUTH_SERVICE_URL + '/auth/register', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.post('/login', async (req, res) => {
   try {
-    const response = await axios.get(ALUMNI_SERVICE_URL + '/alumni/' + req.params.id);
+    const response = await axios.post(AUTH_SERVICE_URL + '/auth/login', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/:id/connect', async (req, res) => {
+router.post('/refresh-token', async (req, res) => {
   try {
-    const response = await axios.post(ALUMNI_SERVICE_URL + '/alumni/' + req.params.id + '/connect', req.body);
+    const response = await axios.post(AUTH_SERVICE_URL + '/auth/refresh-token', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.post('/:id/messages', async (req, res) => {
+router.post('/forgot-password', async (req, res) => {
   try {
-    const response = await axios.post(ALUMNI_SERVICE_URL + '/alumni/' + req.params.id + '/messages', req.body);
+    const response = await axios.post(AUTH_SERVICE_URL + '/auth/forgot-password', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.get('/connections', async (req, res) => {
+router.post('/reset-password', async (req, res) => {
   try {
-    const response = await axios.get(ALUMNI_SERVICE_URL + '/alumni/connections');
+    const response = await axios.post(AUTH_SERVICE_URL + '/auth/reset-password', req.body);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });
 
-router.get('/messages', async (req, res) => {
+router.get('/verify-email/:token', async (req, res) => {
   try {
-    const response = await axios.get(ALUMNI_SERVICE_URL + '/alumni/messages');
+    const response = await axios.get(AUTH_SERVICE_URL + '/auth/verify-email/' + req.params.token);
     res.status(response.status).json(response.data);
-  } catch (error) {
+  } catch (error:any){
     res.status(error.response ? error.response.status : 500).json(error.response ? error.response.data : { message: 'Internal server error' });
   }
 });

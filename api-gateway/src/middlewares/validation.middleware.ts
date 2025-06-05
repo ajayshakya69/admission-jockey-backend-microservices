@@ -1,11 +1,11 @@
-import type { Request, Response, NextFunction } from "express"
-import { type ZodSchema, ZodError } from "zod"
+import type { Request, Response, NextFunction } from "express";
+import { type ZodSchema, ZodError } from "zod";
 
 export const validateBody = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      schema.parse(req.body)
-      next()
+      schema.parse(req.body);
+      return next();
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({
@@ -13,18 +13,18 @@ export const validateBody = (schema: ZodSchema) => {
           errors: error.errors,
           statusCode: 400,
           timestamp: new Date().toISOString(),
-        })
+        });
       }
-      next(error)
+      return next(error);
     }
-  }
-}
+  };
+};
 
 export const validateQuery = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      schema.parse(req.query)
-      next()
+      schema.parse(req.query);
+      return next();
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({
@@ -32,18 +32,18 @@ export const validateQuery = (schema: ZodSchema) => {
           errors: error.errors,
           statusCode: 400,
           timestamp: new Date().toISOString(),
-        })
+        });
       }
-      next(error)
+      return next(error);
     }
-  }
-}
+  };
+};
 
 export const validateParams = (schema: ZodSchema) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
-      schema.parse(req.params)
-      next()
+      schema.parse(req.params);
+      return next();
     } catch (error) {
       if (error instanceof ZodError) {
         return res.status(400).json({
@@ -51,9 +51,9 @@ export const validateParams = (schema: ZodSchema) => {
           errors: error.errors,
           statusCode: 400,
           timestamp: new Date().toISOString(),
-        })
+        });
       }
-      next(error)
+      return next(error);
     }
-  }
-}
+  };
+};

@@ -27,6 +27,6 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "src/services/messageQueue.service.ts", "../alumni-service/src/models/messageQueue.routes.ts"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
