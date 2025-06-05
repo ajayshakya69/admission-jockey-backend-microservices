@@ -14,7 +14,7 @@ dist/
 /.next/
 /out/
 
-# production
+# productiongit 
 /build
 
 # debug

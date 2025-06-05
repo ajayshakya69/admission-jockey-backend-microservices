@@ -12,5 +12,3 @@ export const logger = winston.createLogger({
     new winston.transports.File({ filename: 'logs/combined.log' }),
   ],
 });
-
-

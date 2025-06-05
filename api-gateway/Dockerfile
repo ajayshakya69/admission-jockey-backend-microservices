@@ -1,51 +1,40 @@
-# Multi-stage build for production
-FROM node:18-alpine AS builder
+# ---------- Builder Stage ----------
+  FROM oven/bun:1.1.8 as builder
 
-WORKDIR /usr/src/app
+  WORKDIR /app
+  
+  # Copy files needed for install and build
+  COPY bun.lock package.json tsconfig.json ./
+  
+  # Install dependencies and build
+  RUN bun install --frozen-lockfile
+  
+  COPY src ./src
+  RUN bun run build
+  
+  
+  # ---------- Production Stage ----------
+  FROM node:18-alpine as production
+  
+  WORKDIR /app
+  COPY wait-for-kafka.sh ./wait-for-kafka.sh
+  RUN chmod +x ./wait-for-kafka.sh
+ 
+  
+  # Copy built app, package.json, and node_modules from Bun (yes, it's compatible)
+  COPY --from=builder /app/dist ./dist
+  COPY --from=builder /app/package.json ./
+  COPY --from=builder /app/node_modules ./node_modules
+  
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+  EXPOSE 3000
+  RUN apk add --no-cache netcat-openbsd
 
-# Install dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy source code
-COPY src/ ./src/
-
-# Build the application
-RUN npm run build
-
-# Production stage
-FROM node:18-alpine AS production
-
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
-
-WORKDIR /usr/src/app
-
-# Copy package files
-COPY package*.json ./
-
-# Install only production dependencies
-RUN npm ci --only=production && npm cache clean --force
-
-# Copy built application from builder stage
-COPY --from=builder /usr/src/app/dist ./dist
-
-# Create logs directory
-RUN mkdir -p logs && chown -R nextjs:nodejs logs
-
-# Switch to non-root user
-USER nextjs
-
-# Expose port
-EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3000/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
-
-# Start the application
-CMD ["node", "dist/server.js"]
+  
+  # NestJS health check
+  HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD node -e "require('http').get('http://localhost:3000/health', res => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+  
+  # Start the app
+  CMD ["./wait-for-kafka.sh", "node", "dist/main.js"]
+  

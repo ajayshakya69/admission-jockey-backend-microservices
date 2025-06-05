@@ -29,20 +29,43 @@ mkdir -p monitoring-service/config/prometheus
 mkdir -p monitoring-service/config/grafana
 
 # Install dependencies for all services
-services=("api-gateway" "auth-service" "user-service" "college-service" "application-service" "alumni-service" "calendar-service" "payment-service" "notification-service")
+services=(
+    "api-gateway"
+    "auth-service"
+    # "user-service"
+    # "college-service"
+    # "application-service"
+    # "alumni-service"
+    # "calendar-service"
+    # "payment-service"
+    # "notification-service"
+            )
 
 for service in "${services[@]}"; do
     if [ -d "$service" ]; then
         echo -e "${GREEN}📦 Installing dependencies for $service...${NC}"
-        cd "$service" && npm install && cd ..
+        cd "$service" && bun install && cd ..
     else
         echo -e "${YELLOW}⚠️  Directory $service not found, skipping...${NC}"
     fi
 done
 
 # Build and start services with Docker Compose
-echo -e "${GREEN}🐳 Building and starting all services with Docker Compose...${NC}"
-docker-compose up --build -d
+echo -e "${GREEN}🐳 Checking and building images only if not present...${NC}"
+
+for service in "${services[@]}"; do
+  image_name="admissionjockey_${service}"  # Adjust based on your actual Docker Compose image name
+  if ! docker image inspect "$image_name" > /dev/null 2>&1; then
+    echo -e "${YELLOW}📦 Image for $service not found. Building...${NC}"
+    docker-compose build "$service"
+  else
+    echo -e "${GREEN}✅ Image for $service already exists. Skipping build.${NC}"
+  fi
+done
+
+echo -e "${GREEN}🚀 Starting all services with Docker Compose...${NC}"
+docker-compose up -d
+
 
 # Wait for services to be ready
 echo -e "${GREEN}⏳ Waiting for services to be ready...${NC}"
