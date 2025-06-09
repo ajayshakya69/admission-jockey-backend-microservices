@@ -8,7 +8,9 @@ import type {
   ResetPasswordDto,
   RefreshTokenDto,
 } from "./dto/auth.dto";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
+@ApiTags("Auth module")
 @Controller("auth")
 export class AuthController {
   constructor(
@@ -16,6 +18,7 @@ export class AuthController {
     private readonly tokenService: TokenService
   ) {}
 
+  @ApiOperation({ summary: 'Create Users' })
   @Post("register")
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);

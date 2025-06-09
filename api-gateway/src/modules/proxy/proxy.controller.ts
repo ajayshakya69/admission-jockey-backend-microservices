@@ -2,12 +2,18 @@ import { Controller, All, Req, Res, UseGuards } from "@nestjs/common";
 import type { Request, Response } from "express";
 import { ProxyService } from "./proxy.service";
 import { AuthGuard } from "../../guards/auth.guard";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
 
+@ApiTags("Proxy module")
 @Controller()
 export class ProxyController {
   constructor(private readonly proxyService: ProxyService) {}
 
   @All("auth/*")
+  @ApiOperation({
+    summary: "Proxy requests to the auth service",
+    description: "This endpoint proxies all requests to the auth service.",
+  })
   async proxyAuth(@Req() req: Request, @Res() res: Response) {
     console.log("Proxying request to auth service");
     return this.proxyService.proxyRequest(req, res, "auth-service");

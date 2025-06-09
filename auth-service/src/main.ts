@@ -3,6 +3,7 @@ import { AppModule } from "./app.module"
 import { Logger, ValidationPipe } from "@nestjs/common"
 import { LoggingInterceptor } from "./interceptors/logging.interceptor"
 import { ServiceDiscoveryService } from "./modules/service-discovery/service-discovery.service"
+import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"
 
 
 
@@ -27,6 +28,17 @@ async function bootstrap() {
     origin: process.env.NODE_ENV === "production" ? ["https://myapp.com", "https://admin.myapp.com"] : "*",
     credentials: true,
   })
+
+  const config = new DocumentBuilder()
+  .setTitle("My API")
+  .setDescription("API documentation")
+  .setVersion("1.0")
+  .addBearerAuth() // Optional, for auth
+  .build();
+
+const document = SwaggerModule.createDocument(app, config);
+SwaggerModule.setup("auth/api/docs", app, document);
+
 
   const PORT = Number.parseInt(process.env.PORT || "3001", 10)
   const SERVICE_NAME = "auth-service"
