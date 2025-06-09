@@ -5,10 +5,16 @@ import { LoggingInterceptor } from "./interceptors/logging.interceptor";
 import { ServiceDiscoveryService } from "./modules/service-discovery/service-discovery.service";
 import { KafkaService } from "./modules/message-queue/kafka/kafka.service";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
+import   bodyParser from "body-parser";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule,{
+    bodyParser:false
+  });
   const logger = new Logger("Bootstrap");
+
+  app.use(bodyParser.json())
+  app.use(bodyParser.urlencoded({ extended: true }));
 
   // Global pipes
   app.useGlobalPipes(
