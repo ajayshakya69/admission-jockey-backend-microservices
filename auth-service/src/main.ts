@@ -7,9 +7,12 @@ import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger"
 
 
 
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule)
   const logger = new Logger("Bootstrap")
+
+ 
 
   // Global pipes
   app.useGlobalPipes(
@@ -30,10 +33,10 @@ async function bootstrap() {
   })
 
   const config = new DocumentBuilder()
-  .setTitle("My API")
-  .setDescription("API documentation")
-  .setVersion("1.0")
-  .addBearerAuth() // Optional, for auth
+  .setTitle('My App')
+  .setDescription('The API description')
+  .setVersion('1.0')
+  .addTag('Auth module') // optional
   .build();
 
 const document = SwaggerModule.createDocument(app, config);
@@ -50,6 +53,8 @@ SwaggerModule.setup("auth/api/docs", app, document);
   logger.log(`🚀 Auth Service running on port ${PORT}`, "Bootstrap")
 
   // Register with service discovery
+
+  console.log(process.env.MONGO_URI, "Mongo URI")
   try {
     const serviceDiscovery = app.get(ServiceDiscoveryService)
     await serviceDiscovery.registerService(SERVICE_NAME, SERVICE_ID, SERVICE_ADDRESS, PORT)

@@ -1,6 +1,6 @@
 import { Injectable, type NestInterceptor, type ExecutionContext, type CallHandler, Logger } from "@nestjs/common"
-import type { Observable } from "rxjs"
-import { tap } from "rxjs/operators"
+import { throwError, type Observable } from "rxjs"
+import { catchError, tap } from "rxjs/operators"
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
@@ -13,30 +13,19 @@ export class LoggingInterceptor implements NestInterceptor {
     const userAgent = headers["user-agent"] || ""
     const start = Date.now()
 
-    return next.handle().pipe(
+     return next.handle().pipe(
       tap(() => {
         const { statusCode } = response
         const duration = Date.now() - start
-        const logData = {
-          method,
-          url,
-          statusCode,
-          duration: `${duration}ms`,
-          ip,
-          userAgent,
-        }
-
-        // Color-coded logging based on status code
-        if (statusCode >= 200 && statusCode < 300) {
-          this.logger.log(`✅ ${method} ${url} - ${statusCode} - ${duration}ms`, JSON.stringify(logData))
-        } else if (statusCode >= 400 && statusCode < 500) {
-          this.logger.warn(`⚠️ ${method} ${url} - ${statusCode} - ${duration}ms`, JSON.stringify(logData))
-        } else if (statusCode >= 500) {
-          this.logger.error(`❌ ${method} ${url} - ${statusCode} - ${duration}ms`, JSON.stringify(logData))
-        } else {
-          this.logger.debug(`ℹ️ ${method} ${url} - ${statusCode} - ${duration}ms`, JSON.stringify(logData))
-        }
+        this.logger.log(`✅ ${method} ${url} - ${statusCode} - ${duration}ms`, JSON.stringify({ method, url, statusCode, duration: `${duration}ms`, ip, userAgent }))
       }),
+      catchError((error) => {
+        const duration = Date.now() - start
+        const statusCode = error.status || 500
+        this.logger.error(`❌ ${method} ${url} - ${statusCode} - ${duration}ms`, JSON.stringify({ method, url, statusCode, duration: `${duration}ms`, ip, userAgent, message: error.message }))
+        return throwError(() => error)
+      })
     )
+    
   }
 }
